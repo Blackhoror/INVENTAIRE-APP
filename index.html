@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IT Inventory — Gerflor / Romus</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #F4F6FA;
+    --surface: #FFFFFF;
+    --surface2: #F0F4FA;
+    --border: #E2E8F0;
+    --border2: #CBD5E1;
+    --text: #0F172A;
+    --text2: #64748B;
+    --text3: #94A3B8;
+    --blue: #185FA5;
+    --blue-light: #E6F1FB;
+    --blue-mid: #B5D4F4;
+    --green: #3B6D11;
+    --green-light: #EAF3DE;
+    --red: #A32D2D;
+    --red-light: #FCEBEB;
+    --amber: #854F0B;
+    --amber-light: #FAEEDA;
+    --navy: #1E3A5F;
+    --radius: 8px;
+    --radius-lg: 12px;
+    --font: 'DM Sans', sans-serif;
+    --mono: 'DM Mono', monospace;
+    --shadow: 0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
+  }
+
+  body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; display: flex; }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 220px; min-width: 220px; background: var(--navy);
+    display: flex; flex-direction: column;
+    position: fixed; top: 0; left: 0; bottom: 0; z-index: 100;
+  }
+  .sidebar-head { padding: 20px 18px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .sidebar-head .logo { font-size: 15px; font-weight: 600; color: #fff; letter-spacing: -0.3px; }
+  .sidebar-head .sub { font-size: 11px; color: rgba(255,255,255,0.45); margin-top: 3px; }
+  .nav { padding: 10px 0; flex: 1; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 18px; font-size: 13px; cursor: pointer;
+    color: rgba(255,255,255,0.55); transition: all 0.15s; position: relative;
+    user-select: none;
+  }
+  .nav-item:hover { color: rgba(255,255,255,0.9); background: rgba(255,255,255,0.05); }
+  .nav-item.active { color: #fff; background: rgba(255,255,255,0.1); }
+  .nav-item.active::before {
+    content: ''; position: absolute; left: 0; top: 4px; bottom: 4px;
+    width: 3px; background: #64B5F6; border-radius: 0 2px 2px 0;
+  }
+  .nav-icon { font-size: 15px; width: 18px; text-align: center; flex-shrink: 0; }
+  .nav-badge {
+    margin-left: auto; background: #E24B4A; color: #fff;
+    font-size: 10px; font-weight: 600; padding: 1px 6px;
+    border-radius: 10px; min-width: 18px; text-align: center;
+  }
+  .sidebar-footer { padding: 14px 18px; border-top: 1px solid rgba(255,255,255,0.08); }
+  .sidebar-footer p { font-size: 11px; color: rgba(255,255,255,0.3); }
+
+  /* ── MAIN ── */
+  .main { margin-left: 220px; flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+
+  .topbar {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 0 24px; height: 56px; display: flex; align-items: center;
+    justify-content: space-between; position: sticky; top: 0; z-index: 50;
+    box-shadow: var(--shadow);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 10px; }
+  .topbar-title { font-size: 15px; font-weight: 600; color: var(--text); }
+  .topbar-sub { font-size: 12px; color: var(--text3); }
+  .topbar-right { display: flex; gap: 8px; align-items: center; }
+
+  .btn {
+    padding: 7px 14px; font-size: 12px; font-family: var(--font);
+    border: 1px solid var(--border2); border-radius: var(--radius);
+    background: var(--surface); color: var(--text); cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px; transition: all 0.15s;
+    font-weight: 500;
+  }
+  .btn:hover { background: var(--surface2); border-color: var(--text3); }
+  .btn-primary { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .btn-primary:hover { background: #0C447C; border-color: #0C447C; }
+  .btn-sm { padding: 5px 10px; font-size: 11px; }
+
+  .content { padding: 24px; flex: 1; }
+
+  /* ── PAGES ── */
+  .page { display: none; animation: fadeIn 0.2s ease; }
+  .page.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── KPI GRID ── */
+  .kpi-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 20px; }
+  .kpi-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 14px 16px;
+    box-shadow: var(--shadow);
+  }
+  .kpi-label { font-size: 11px; color: var(--text2); font-weight: 500; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .kpi-value { font-size: 28px; font-weight: 600; line-height: 1; }
+  .kpi-value.c-default { color: var(--text); }
+  .kpi-value.c-green { color: var(--green); }
+  .kpi-value.c-red { color: var(--red); }
+  .kpi-value.c-blue { color: var(--blue); }
+  .kpi-value.c-amber { color: var(--amber); }
+  .kpi-sub { font-size: 11px; color: var(--text3); margin-top: 4px; }
+
+  /* ── TWO COL ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 16px 18px;
+    box-shadow: var(--shadow);
+  }
+  .card-title { font-size: 12px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px; }
+
+  /* ── BAR CHART ── */
+  .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .bar-label { font-size: 12px; color: var(--text2); min-width: 100px; text-align: right; }
+  .bar-track { flex: 1; height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 3px; background: var(--blue); transition: width 0.6s cubic-bezier(0.4,0,0.2,1); }
+  .bar-fill.green { background: var(--green); }
+  .bar-fill.amber { background: #EF9F27; }
+  .bar-count { font-size: 12px; color: var(--text); font-weight: 500; min-width: 20px; }
+
+  /* ── TABLE ── */
+  .table-wrap {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .table-header { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .table-header-title { font-size: 13px; font-weight: 600; color: var(--text); }
+  .table-count { font-size: 12px; color: var(--text3); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th {
+    background: var(--surface2); padding: 10px 14px;
+    text-align: left; font-size: 11px; font-weight: 600;
+    color: var(--text2); border-bottom: 1px solid var(--border);
+    white-space: nowrap; text-transform: uppercase; letter-spacing: 0.4px;
+  }
+  tbody td {
+    padding: 10px 14px; border-bottom: 1px solid var(--border);
+    color: var(--text); vertical-align: middle;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: var(--surface2); }
+  tbody tr.row-danger td { background: #FFF5F5; }
+  tbody tr.row-warn td { background: #FFFBF0; }
+
+  /* ── BADGES ── */
+  .badge {
+    display: inline-flex; align-items: center; padding: 3px 8px;
+    border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap;
+  }
+  .badge-green { background: var(--green-light); color: var(--green); }
+  .badge-red { background: var(--red-light); color: var(--red); }
+  .badge-blue { background: var(--blue-light); color: var(--blue); }
+  .badge-amber { background: var(--amber-light); color: var(--amber); }
+  .badge-gray { background: var(--surface2); color: var(--text2); }
+
+  /* ── FILTERS ── */
+  .filters { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; align-items: center; }
+  .filter-input, .filter-select {
+    padding: 7px 10px; font-size: 12px; font-family: var(--font);
+    border: 1px solid var(--border2); border-radius: var(--radius);
+    background: var(--surface); color: var(--text); outline: none;
+    transition: border-color 0.15s;
+  }
+  .filter-input:focus, .filter-select:focus { border-color: var(--blue); }
+  .filter-input { width: 200px; }
+
+  /* ── ALERTS ── */
+  .alert-list { display: flex; flex-direction: column; gap: 10px; }
+  .alert-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 12px 16px; border-radius: var(--radius-lg); border: 1px solid;
+  }
+  .alert-item.danger { background: var(--red-light); border-color: #F7C1C1; }
+  .alert-item.warning { background: var(--amber-light); border-color: #FAC775; }
+  .alert-item.info { background: var(--blue-light); border-color: var(--blue-mid); }
+  .alert-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+  .danger .alert-dot { background: var(--red); }
+  .warning .alert-dot { background: var(--amber); }
+  .info .alert-dot { background: var(--blue); }
+  .alert-body { flex: 1; }
+  .alert-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+  .alert-desc { font-size: 12px; color: var(--text2); }
+
+  /* ── IMPORT ── */
+  .import-zone {
+    border: 2px dashed var(--border2); border-radius: var(--radius-lg);
+    padding: 40px 24px; text-align: center; background: var(--surface);
+    cursor: pointer; transition: all 0.2s; margin-bottom: 16px;
+  }
+  .import-zone:hover { border-color: var(--blue); background: var(--blue-light); }
+  .import-zone.drag-over { border-color: var(--blue); background: var(--blue-light); }
+  .import-zone .iz-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+  .import-zone .iz-sub { font-size: 12px; color: var(--text2); }
+  .import-icon { font-size: 32px; margin-bottom: 10px; }
+  #fileInput { display: none; }
+
+  /* ── IMPORT TABLE PREVIEW ── */
+  #importPreview { display: none; }
+  .preview-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .preview-title { font-size: 14px; font-weight: 600; color: var(--text); }
+  .preview-meta { font-size: 12px; color: var(--text3); }
+
+  /* ── COLUMNS INFO ── */
+  .columns-info { background: var(--surface2); border-radius: var(--radius); padding: 14px 16px; margin-top: 12px; }
+  .columns-info p { font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 8px; }
+  .col-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .col-tag {
+    padding: 3px 8px; background: var(--surface); border: 1px solid var(--border2);
+    border-radius: 4px; font-size: 11px; font-family: var(--mono); color: var(--text2);
+  }
+
+  /* ── TICKET LINK ── */
+  .ticket-link { color: var(--blue); font-family: var(--mono); font-size: 11px; font-weight: 500; }
+
+  /* ── EMPTY STATE ── */
+  .empty { text-align: center; padding: 40px; color: var(--text3); font-size: 13px; }
+
+  /* ── SECTION HEADER ── */
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .section-title { font-size: 14px; font-weight: 600; color: var(--text); }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-head">
+    <div class="logo">IT Inventory</div>
+    <div class="sub">Gerflor · Romus · Support L1</div>
+  </div>
+  <nav class="nav">
+    <div class="nav-item active" onclick="showPage('dashboard',this)">
+      <span class="nav-icon">▣</span> Dashboard
+    </div>
+    <div class="nav-item" onclick="showPage('inventory',this)">
+      <span class="nav-icon">☰</span> Inventaire
+    </div>
+    <div class="nav-item" onclick="showPage('alerts',this)">
+      <span class="nav-icon">⚑</span> Alertes
+      <span class="nav-badge" id="alertBadge">4</span>
+    </div>
+    <div class="nav-item" onclick="showPage('import',this)">
+      <span class="nav-icon">↑</span> Import Excel
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    <p>Service Desk IT — L1</p>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <header class="topbar">
+    <div class="topbar-left">
+      <span class="topbar-title" id="pageTitle">Dashboard</span>
+      <span class="topbar-sub" id="pageDate"></span>
+    </div>
+    <div class="topbar-right">
+      <button class="btn btn-sm" onclick="exportCSV()">↓ Export CSV</button>
+      <button class="btn btn-primary btn-sm" onclick="showPage('import', document.querySelectorAll('.nav-item')[3])">+ Nouvel asset</button>
+    </div>
+  </header>
+
+  <main class="content">
+
+    <!-- ── PAGE DASHBOARD ── -->
+    <div class="page active" id="page-dashboard">
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">Total Assets</div>
+          <div class="kpi-value c-default" id="kpi-total">—</div>
+          <div class="kpi-sub">équipements recensés</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">En service</div>
+          <div class="kpi-value c-green" id="kpi-service">—</div>
+          <div class="kpi-sub">actifs & assignés</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">En stock</div>
+          <div class="kpi-value c-blue" id="kpi-stock">—</div>
+          <div class="kpi-sub">disponibles</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">En panne</div>
+          <div class="kpi-value c-red" id="kpi-panne">—</div>
+          <div class="kpi-sub">à traiter</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Garanties exp.</div>
+          <div class="kpi-value c-amber" id="kpi-garantie">—</div>
+          <div class="kpi-sub">à surveiller</div>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-title">Par type d'équipement</div>
+          <div id="chart-type"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Par site</div>
+          <div id="chart-site"></div>
+        </div>
+      </div>
+
+      <div class="section-header">
+        <span class="section-title">Assets nécessitant attention</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ID</th><th>Équipement</th><th>Utilisateur</th><th>Site</th><th>Statut</th><th>Ticket Ivanti</th></tr></thead>
+          <tbody id="dash-alerts-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── PAGE INVENTAIRE ── -->
+    <div class="page" id="page-inventory">
+      <div class="filters">
+        <input class="filter-input" type="text" placeholder="🔍  Rechercher..." id="searchInput" oninput="filterTable()">
+        <select class="filter-select" id="filterType" onchange="filterTable()">
+          <option value="">Tous les types</option>
+          <option>Laptop</option><option>Desktop</option><option>Écran</option>
+          <option>Téléphone IP</option><option>Casque</option><option>Imprimante</option><option>Licence</option>
+        </select>
+        <select class="filter-select" id="filterStatut" onchange="filterTable()">
+          <option value="">Tous les statuts</option>
+          <option>En service</option><option>En stock</option><option>En panne</option>
+          <option>En réparation</option><option>Réformé</option><option>Actif</option>
+        </select>
+        <select class="filter-select" id="filterSite" onchange="filterTable()">
+          <option value="">Tous les sites</option>
+          <option>Casablanca</option><option>Lyon</option><option>HQ Paris</option><option>Romus</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <div class="table-header">
+          <span class="table-header-title">Inventaire complet</span>
+          <span class="table-count" id="tableCount"></span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>ID Asset</th><th>Type</th><th>Modèle</th><th>N° Série</th>
+              <th>Statut</th><th>Utilisateur</th><th>Site</th>
+              <th>Fin garantie</th><th>Ticket Ivanti</th>
+            </tr>
+          </thead>
+          <tbody id="inventoryBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── PAGE ALERTES ── -->
+    <div class="page" id="page-alerts">
+      <div class="section-header" style="margin-bottom:16px;">
+        <span class="section-title">Alertes actives</span>
+        <span class="badge badge-red" id="alertCount"></span>
+      </div>
+      <div class="alert-list" id="alertList"></div>
+    </div>
+
+    <!-- ── PAGE IMPORT ── -->
+    <div class="page" id="page-import">
+      <div class="import-zone" id="dropZone"
+           onclick="document.getElementById('fileInput').click()"
+           ondragover="handleDrag(event)"
+           ondragleave="handleDragLeave(event)"
+           ondrop="handleDrop(event)">
+        <div class="import-icon">📂</div>
+        <div class="iz-title">Importer votre fichier Excel</div>
+        <div class="iz-sub">Glisser-déposer ou cliquer — formats acceptés : .xlsx · .xls · .csv</div>
+        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" onchange="handleFileInput(this)">
+      </div>
+
+      <div id="importPreview">
+        <div class="preview-header">
+          <span class="preview-title" id="previewTitle"></span>
+          <button class="btn btn-primary btn-sm" onclick="applyImport()">✓ Appliquer l'import</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>ID</th><th>Type</th><th>Modèle</th><th>S/N</th><th>Statut</th><th>Utilisateur</th><th>Site</th><th>Fin garantie</th></tr>
+            </thead>
+            <tbody id="importBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="columns-info">
+        <p>Structure attendue du fichier Excel (colonnes)</p>
+        <div class="col-tags">
+          <span class="col-tag">ID_Asset</span>
+          <span class="col-tag">Type</span>
+          <span class="col-tag">Marque_Modèle</span>
+          <span class="col-tag">Numéro_Série</span>
+          <span class="col-tag">Tag_Interne</span>
+          <span class="col-tag">Statut</span>
+          <span class="col-tag">Utilisateur_Assigné</span>
+          <span class="col-tag">Email_Utilisateur</span>
+          <span class="col-tag">Site</span>
+          <span class="col-tag">Date_Achat</span>
+          <span class="col-tag">Fin_Garantie</span>
+          <span class="col-tag">Fournisseur</span>
+          <span class="col-tag">Ticket_Ivanti</span>
+          <span class="col-tag">Notes</span>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- SheetJS pour lire les fichiers Excel -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────
+let assets = [
+  {id:"AST-0001",type:"Laptop",model:"Dell Latitude 5540",sn:"SN1234ABC",tag:"GRF-PC-001",statut:"En service",user:"Ahmed Benali",email:"a.benali@gerflor.com",site:"Casablanca",achat:"2023-01-15",garantie:"2026-01-15",fournisseur:"Dell",ticket:"INC-10012",notes:"RAS"},
+  {id:"AST-0002",type:"Écran",model:"HP E24 G4",sn:"SN5678DEF",tag:"GRF-SCR-002",statut:"En service",user:"Ahmed Benali",email:"a.benali@gerflor.com",site:"Casablanca",achat:"2023-01-15",garantie:"2026-01-15",fournisseur:"HP",ticket:"",notes:""},
+  {id:"AST-0003",type:"Laptop",model:"Lenovo ThinkPad X1",sn:"SN9012GHI",tag:"GRF-PC-003",statut:"En panne",user:"Sara Moussaoui",email:"s.moussaoui@gerflor.com",site:"Lyon",achat:"2021-06-10",garantie:"2024-06-10",fournisseur:"Lenovo",ticket:"INC-20451",notes:"Problème clavier — en cours"},
+  {id:"AST-0004",type:"Téléphone IP",model:"Yealink T46S",sn:"SNABCDJKL",tag:"GRF-TEL-004",statut:"En service",user:"Marc Dubois",email:"m.dubois@gerflor.com",site:"HQ Paris",achat:"2022-11-01",garantie:"2025-11-01",fournisseur:"Yealink",ticket:"",notes:""},
+  {id:"AST-0005",type:"Laptop",model:"HP EliteBook 840",sn:"SNXYZMNOP",tag:"GRF-PC-005",statut:"En stock",user:"",email:"",site:"Casablanca",achat:"2022-03-20",garantie:"2025-03-20",fournisseur:"HP",ticket:"",notes:"Disponible pour affectation"},
+  {id:"AST-0006",type:"Casque",model:"Jabra Evolve 40",sn:"SNCASQUE01",tag:"GRF-HST-006",statut:"En service",user:"Leila Tazi",email:"l.tazi@gerflor.com",site:"Casablanca",achat:"2023-05-12",garantie:"2026-05-12",fournisseur:"Jabra",ticket:"",notes:""},
+  {id:"AST-0007",type:"Imprimante",model:"Brother MFC-L3770",sn:"SNPRINT001",tag:"GRF-PRN-007",statut:"En service",user:"",email:"",site:"Lyon",achat:"2020-09-01",garantie:"2023-09-01",fournisseur:"Brother",ticket:"INC-18765",notes:"Garantie expirée"},
+  {id:"AST-0008",type:"Licence",model:"Microsoft 365 E3",sn:"N/A",tag:"LIC-M365-008",statut:"Actif",user:"Jean Petit",email:"j.petit@gerflor.com",site:"HQ Paris",achat:"2024-01-01",garantie:"2025-01-01",fournisseur:"Microsoft",ticket:"",notes:"Renouvellement à prévoir"},
+];
+
+let pendingImport = [];
+const today = new Date(); today.setHours(0,0,0,0);
+
+// ── UTILS ─────────────────────────────────────────────────────────────────
+function garantieStatus(g) {
+  if (!g) return 'ok';
+  const d = new Date(g);
+  const diff = (d - today) / 86400000;
+  if (diff < 0) return 'expired';
+  if (diff < 90) return 'soon';
+  return 'ok';
+}
+
+function badgeStatut(s) {
+  const map = {
+    "En service":"badge-green","Actif":"badge-green",
+    "En panne":"badge-red","En stock":"badge-blue",
+    "En réparation":"badge-amber","Réformé":"badge-gray"
+  };
+  return `<span class="badge ${map[s]||'badge-gray'}">${s}</span>`;
+}
+
+function fmtGarantie(g) {
+  if (!g) return '<span style="color:var(--text3)">—</span>';
+  const st = garantieStatus(g);
+  const styles = {expired:`color:var(--red);font-weight:600`,soon:`color:var(--amber);font-weight:600`,ok:`color:var(--text)`};
+  return `<span style="${styles[st]}">${g}</span>`;
+}
+
+// ── RENDER KPIs ────────────────────────────────────────────────────────────
+function renderKPIs() {
+  const total = assets.length;
+  const service = assets.filter(a => a.statut === 'En service' || a.statut === 'Actif').length;
+  const stock = assets.filter(a => a.statut === 'En stock').length;
+  const panne = assets.filter(a => a.statut === 'En panne' || a.statut === 'En réparation').length;
+  const expiredG = assets.filter(a => garantieStatus(a.garantie) === 'expired').length;
+
+  document.getElementById('kpi-total').textContent = total;
+  document.getElementById('kpi-service').textContent = service;
+  document.getElementById('kpi-stock').textContent = stock;
+  document.getElementById('kpi-panne').textContent = panne;
+  document.getElementById('kpi-garantie').textContent = expiredG;
+}
+
+// ── RENDER CHARTS ──────────────────────────────────────────────────────────
+function renderChart(containerId, counts, colorClass) {
+  const el = document.getElementById(containerId);
+  const max = Math.max(...Object.values(counts), 1);
+  el.innerHTML = Object.entries(counts)
+    .sort((a,b) => b[1]-a[1])
+    .map(([k,v]) => `
+      <div class="bar-row">
+        <div class="bar-label">${k}</div>
+        <div class="bar-track"><div class="bar-fill ${colorClass||''}" style="width:${Math.round(v/max*100)}%"></div></div>
+        <div class="bar-count">${v}</div>
+      </div>`).join('');
+}
+
+function renderCharts() {
+  const types = {}, sites = {};
+  assets.forEach(a => {
+    types[a.type] = (types[a.type]||0)+1;
+    if (a.site) sites[a.site] = (sites[a.site]||0)+1;
+  });
+  renderChart('chart-type', types, '');
+  renderChart('chart-site', sites, 'green');
+}
+
+// ── RENDER DASH ALERTS ─────────────────────────────────────────────────────
+function renderDashAlerts() {
+  const problematic = assets.filter(a =>
+    a.statut === 'En panne' || a.statut === 'En réparation' ||
+    garantieStatus(a.garantie) === 'expired' ||
+    (a.statut === 'En stock' && !a.user)
+  );
+  const tbody = document.getElementById('dash-alerts-body');
+  if (!problematic.length) {
+    tbody.innerHTML = `<tr><td colspan="6" class="empty">Aucun problème détecté ✓</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = problematic.map(a => {
+    const isWarn = garantieStatus(a.garantie) === 'expired';
+    const rowCls = (a.statut === 'En panne') ? 'row-danger' : isWarn ? 'row-warn' : '';
+    return `<tr class="${rowCls}">
+      <td style="font-family:monospace;font-size:12px;">${a.id}</td>
+      <td>${a.model}</td>
+      <td>${a.user||'—'}</td>
+      <td>${a.site||'—'}</td>
+      <td>${badgeStatut(a.statut)}</td>
+      <td>${a.ticket ? `<span class="ticket-link">${a.ticket}</span>` : '—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── RENDER INVENTORY TABLE ─────────────────────────────────────────────────
+function renderTable(data) {
+  const tbody = document.getElementById('inventoryBody');
+  document.getElementById('tableCount').textContent = `${data.length} asset${data.length>1?'s':''}`;
+  if (!data.length) {
+    tbody.innerHTML = `<tr><td colspan="9" class="empty">Aucun résultat</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = data.map(a => {
+    const gs = garantieStatus(a.garantie);
+    const rowCls = a.statut === 'En panne' ? 'row-danger' : gs === 'expired' ? 'row-warn' : gs === 'soon' ? 'row-warn' : '';
+    return `<tr class="${rowCls}">
+      <td style="font-family:monospace;font-size:12px;font-weight:500;">${a.id}</td>
+      <td><span class="badge badge-gray" style="font-size:11px;">${a.type}</span></td>
+      <td>${a.model}</td>
+      <td style="font-family:monospace;font-size:11px;color:var(--text2);">${a.sn}</td>
+      <td>${badgeStatut(a.statut)}</td>
+      <td>${a.user||'<span style="color:var(--text3)">—</span>'}</td>
+      <td>${a.site||'—'}</td>
+      <td>${fmtGarantie(a.garantie)}</td>
+      <td>${a.ticket ? `<span class="ticket-link">${a.ticket}</span>` : '<span style="color:var(--text3)">—</span>'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function filterTable() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const type = document.getElementById('filterType').value;
+  const statut = document.getElementById('filterStatut').value;
+  const site = document.getElementById('filterSite').value;
+  const filtered = assets.filter(a => {
+    const matchQ = !q || [a.id,a.model,a.user,a.sn,a.ticket,a.site].some(v => (v||'').toLowerCase().includes(q));
+    return matchQ && (!type||a.type===type) && (!statut||a.statut===statut) && (!site||a.site===site);
+  });
+  renderTable(filtered);
+}
+
+// ── RENDER ALERTS PAGE ─────────────────────────────────────────────────────
+function renderAlerts() {
+  const list = [];
+  assets.forEach(a => {
+    if (a.statut === 'En panne') list.push({type:'danger', title:`${a.id} — ${a.model} (${a.user||'non assigné'})`, desc:`En panne${a.ticket ? ` — ticket ${a.ticket} en cours` : ' — aucun ticket ouvert'}`});
+    else if (a.statut === 'En réparation') list.push({type:'warning', title:`${a.id} — ${a.model}`, desc:`En réparation${a.ticket ? ` — suivi ticket ${a.ticket}` : ''}`});
+    if (garantieStatus(a.garantie) === 'expired') list.push({type:'warning', title:`Garantie expirée — ${a.id} ${a.model}`, desc:`Fin de garantie le ${a.garantie} — surveiller les pannes`});
+    else if (garantieStatus(a.garantie) === 'soon') list.push({type:'info', title:`Garantie bientôt expirée — ${a.id} ${a.model}`, desc:`Expire le ${a.garantie} — anticiper le renouvellement`});
+    if (!a.user && a.statut === 'En stock') list.push({type:'info', title:`Asset non assigné — ${a.id} ${a.model}`, desc:`Disponible en stock à ${a.site||'site inconnu'}`});
+  });
+
+  document.getElementById('alertCount').textContent = `${list.length} alertes`;
+  document.getElementById('alertBadge').textContent = list.length;
+
+  const el = document.getElementById('alertList');
+  if (!list.length) { el.innerHTML = `<div class="empty">Aucune alerte active ✓</div>`; return; }
+  el.innerHTML = list.map(a => `
+    <div class="alert-item ${a.type}">
+      <div class="alert-dot"></div>
+      <div class="alert-body">
+        <div class="alert-title">${a.title}</div>
+        <div class="alert-desc">${a.desc}</div>
+      </div>
+    </div>`).join('');
+}
+
+// ── NAVIGATION ─────────────────────────────────────────────────────────────
+function showPage(page, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  if (el) el.classList.add('active');
+  const titles = {dashboard:'Dashboard',inventory:'Inventaire',alerts:'Alertes',import:'Import Excel'};
+  document.getElementById('pageTitle').textContent = titles[page]||page;
+  if (page === 'inventory') { renderTable(assets); filterTable(); }
+  if (page === 'alerts') renderAlerts();
+}
+
+// ── EXPORT CSV ─────────────────────────────────────────────────────────────
+function exportCSV() {
+  const headers = ['ID_Asset','Type','Marque_Modèle','Numéro_Série','Tag_Interne','Statut','Utilisateur_Assigné','Email','Site','Date_Achat','Fin_Garantie','Fournisseur','Ticket_Ivanti','Notes'];
+  const rows = assets.map(a => [a.id,a.type,a.model,a.sn,a.tag,a.statut,a.user,a.email,a.site,a.achat,a.garantie,a.fournisseur,a.ticket,a.notes].map(v => `"${(v||'').replace(/"/g,'""')}"`).join(','));
+  const csv = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'inventaire_it.csv'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── FILE IMPORT ────────────────────────────────────────────────────────────
+function handleDrag(e) { e.preventDefault(); document.getElementById('dropZone').classList.add('drag-over'); }
+function handleDragLeave(e) { document.getElementById('dropZone').classList.remove('drag-over'); }
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('dropZone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) processFile(file);
+}
+function handleFileInput(input) { if (input.files[0]) processFile(input.files[0]); }
+
+function processFile(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (ext === 'csv') {
+    const reader = new FileReader();
+    reader.onload = e => parseCSV(e.target.result, file.name);
+    reader.readAsText(file, 'UTF-8');
+  } else {
+    const reader = new FileReader();
+    reader.onload = e => parseXLSX(e.target.result, file.name);
+    reader.readAsArrayBuffer(file);
+  }
+}
+
+function parseXLSX(buffer, name) {
+  try {
+    const wb = XLSX.read(buffer, {type:'array'});
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, {defval:''});
+    showImportPreview(rows, name);
+  } catch(e) { alert('Erreur lecture Excel : ' + e.message); }
+}
+
+function parseCSV(text, name) {
+  const lines = text.split('\n').filter(l => l.trim());
+  const headers = lines[0].split(',').map(h => h.replace(/"/g,'').trim());
+  const rows = lines.slice(1).map(line => {
+    const vals = line.split(',').map(v => v.replace(/"/g,'').trim());
+    const obj = {};
+    headers.forEach((h,i) => obj[h] = vals[i]||'');
+    return obj;
+  });
+  showImportPreview(rows, name);
+}
+
+const COL_MAP = {
+  'ID_Asset':'id','Type':'type','Marque_Modèle':'model','Numéro_Série':'sn',
+  'Tag_Interne':'tag','Statut':'statut','Utilisateur_Assigné':'user',
+  'Email_Utilisateur':'email','Site':'site','Date_Achat':'achat',
+  'Fin_Garantie':'garantie','Fournisseur':'fournisseur','Ticket_Ivanti':'ticket','Notes':'notes'
+};
+
+function mapRow(row) {
+  const obj = {};
+  Object.entries(COL_MAP).forEach(([xlsCol, appKey]) => { obj[appKey] = (row[xlsCol]||'').toString().trim(); });
+  return obj;
+}
+
+function showImportPreview(rows, name) {
+  pendingImport = rows.map(mapRow).filter(r => r.id);
+  document.getElementById('previewTitle').textContent = `Aperçu — ${name} (${pendingImport.length} lignes)`;
+  const tbody = document.getElementById('importBody');
+  tbody.innerHTML = pendingImport.slice(0,20).map(a => `<tr>
+    <td style="font-family:monospace;font-size:12px;">${a.id}</td>
+    <td>${a.type}</td><td>${a.model}</td>
+    <td style="font-family:monospace;font-size:11px;">${a.sn}</td>
+    <td>${badgeStatut(a.statut)}</td><td>${a.user||'—'}</td>
+    <td>${a.site||'—'}</td><td>${fmtGarantie(a.garantie)}</td>
+  </tr>`).join('');
+  document.getElementById('importPreview').style.display = 'block';
+}
+
+function applyImport() {
+  if (!pendingImport.length) return;
+  assets = pendingImport;
+  renderKPIs(); renderCharts(); renderDashAlerts(); renderAlerts();
+  document.getElementById('importPreview').style.display = 'none';
+  pendingImport = [];
+  showPage('dashboard', document.querySelectorAll('.nav-item')[0]);
+  alert(`✓ Import réussi — ${assets.length} assets chargés`);
+}
+
+// ── INIT ───────────────────────────────────────────────────────────────────
+document.getElementById('pageDate').textContent = new Date().toLocaleDateString('fr-FR', {weekday:'long',day:'numeric',month:'long',year:'numeric'});
+renderKPIs();
+renderCharts();
+renderDashAlerts();
+renderAlerts();
+</script>
+</body>
+</html>
